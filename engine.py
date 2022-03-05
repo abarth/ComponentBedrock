@@ -32,6 +32,6 @@ class Component(object):
   def add_child(self, name, child):
     assert Component.is_valid_child_name(name)
     assert not name in self._children
-    assert child.child is None
+    assert child.parent is None
     self._children[name] = child
     child.parent = self
