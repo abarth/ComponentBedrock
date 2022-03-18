@@ -22,6 +22,10 @@ def cf_directory_open(directory, path):
   return stack[-1]
 
 
+def cf_directory_add_child(directory, name, object):
+  directory.add_entry(name, object)
+
+
 def cf_component_create():
   return engine.Component()
   
