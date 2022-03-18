@@ -24,11 +24,36 @@ def cf_directory_open(directory, path):
 
 def cf_component_create():
   return engine.Component()
-
+  
 
 def cf_component_add_child(component, name, child):
   component.add_child(name, child)
 
+
+def cf_component_get_incoming(component):
+  return component.incoming
+
+
+def cf_component_get_outgoing(component):
+  return component.outgoing
+
+
+def cf_component_get_incoming_namespace(component):
+  return component.incoming_namespace
+
+
+def cf_component_get_outgoing_namespace(component):
+  return component.outgoing_namespace
+
+
+def cf_component_get_package(component):
+  return component.package
+
+
+def cf_package_get_directory(package):
+  return package.directory
+  
+  
 # def cf_component_resolve_moniker(component, moniker):
 #   current = component
 #   for part in moniker.split('/'):

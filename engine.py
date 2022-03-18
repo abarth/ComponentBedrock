@@ -19,13 +19,21 @@ class Directory(object):
     return self._entries.get(name)
 
 
+class Package(object):
+  def __init__(self):
+    self.directory = Directory()
+
+
 class Component(object):
   def is_valid_child_name(name):
     return re.fullmatch('[-a-zA-Z_.]{1,100}', name)
   
   def __init__(self):
     self.outgoing = Directory()
-    self.incomming = Directory()
+    self.incoming = Directory()
+    self.incoming_namespace = Directory()
+    self.outgoing_namespace = Directory()
+    self.package = Package()
     self._children = {}
     self.parent = None
 
