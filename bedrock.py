@@ -26,6 +26,14 @@ def cf_directory_add_child(directory, name, object):
   directory.add_entry(name, object)
 
 
+def cf_directory_list(directory):
+  return directory.list()
+
+
+def cf_directory_lookup(directory, name):
+  return directory.lookup(name)
+
+
 def cf_component_create():
   return engine.Component()
   
@@ -48,6 +56,14 @@ def cf_component_get_incoming_namespace(component):
 
 def cf_component_get_outgoing_namespace(component):
   return component.outgoing_namespace
+
+
+def cf_component_get_children(component):
+  return component.list_children()
+
+
+def cf_component_get_child(component, name):
+  return component.lookup_child(name)
 
 
 def cf_component_get_package(component):

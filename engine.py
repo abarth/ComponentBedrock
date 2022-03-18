@@ -2,7 +2,7 @@ import re
 
 class Directory(object):
   def is_valid_entry_name(name):
-    return name != '' and name != '.' and name != '..'
+    return name != '' and name != '.' and name != '..' and not '/' in name
 
   def __init__(self):
     self._entries = {}
@@ -43,3 +43,11 @@ class Component(object):
     assert child.parent is None
     self._children[name] = child
     child.parent = self
+
+  # xxx - these looks very similar to directory
+  def list_children(self):
+    return self._children.keys()
+
+  
+  def lookup_child(self, name):
+    return self._children.get(name)
