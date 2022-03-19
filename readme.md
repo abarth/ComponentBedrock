@@ -11,6 +11,6 @@
 ### Directories
 
 * outgoing == "exposed directory"
-* incoming == ?
+* incoming == ? (meant to be capabilities provided by parent)
 * incoming_namespace == "namespace"
 * outgoing_namespace == "outgoing directory"

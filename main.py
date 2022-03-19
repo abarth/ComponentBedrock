@@ -1,24 +1,40 @@
-
 from shell import * 
+import json5
 
-root = cf_component_create()
+def read_specification(filename):
+  with open(filename) as f:
+    return json5.load(f)
 
-# def cf_component_create_capability
-# def cf_component_transform_capability
-# def cf_component_install_capability
+def parse_component(filename):
+  component = cf_component_create()
+  specification = read_specification(filename)
+  for c in specification.get('children', []):
+    child = parse_component(c['url'])
+    cf_component_add_child(component, c['name'], child)
 
-
-# TOOD: We should parse CML in order to create the topology.
-def create_topology():
-  bootstrap = cf_component_create()
-  cf_component_add_child(root, 'bootstrap', bootstrap)
-  bootstrap_incoming_namespace = cf_component_get_incoming_namespace(bootstrap)
-  bootstrap_pkg = cf_component_get_pkg_directory(bootstrap)
-  cf_directory_add_child(bootstrap_incoming_namespace, 'pkg', bootstrap_pkg)
+  for r in specification.get('routes', []):
+    source_component_name = r['src']
+    default_capability_name = r['name'] if 'name' in r else False
+    source_directory = cf_component_resolve_src(component, source_component_name)
+    
+    source_capability_name = r.get('src_name', default_capability_name)
+    
+    dest_component_name = r['dst']
+    dest_directory = cf_component_resolve_dst(component, dest_component_name)
+    
+    dest_capability_name = r.get('dst_name', default_capability_name)
+    
+    print('routing capability "%s" from component %s to component %s as "%s"' %
+          (source_capability_name, source_component_name,
+           dest_component_name, dest_capability_name))
+    cf_directory_route_capability(source_directory, source_capability_name,
+                                  dest_directory, dest_capability_name)
   
-  core = cf_component_create()
-  cf_component_add_child(root, 'core', core)
-  cf_component_route_capability(bootstrap, 'dev', core, 'dev')
-  return bootstrap
+  return component
 
-create_topology()
+root = parse_component('meta/root.cbl')
+   
+bootstrap = cf_component_get_child(root, 'bootstrap')
+bootstrap_incoming_namespace = cf_component_get_incoming_namespace(bootstrap)
+bootstrap_pkg = cf_component_get_pkg_directory(bootstrap)
+cf_directory_add_child(bootstrap_incoming_namespace, 'pkg', bootstrap_pkg)

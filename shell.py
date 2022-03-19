@@ -18,15 +18,21 @@ def cd(path):
     return
   _cwd = directory
 
-def print_component(component):
-  print('children: ' +
+def print_component(component, prefix=''):
+  print(prefix + 'children: ' +
         ', '.join(cf_component_get_children(component)))
-  print('incoming: ' +
+  print(prefix + 'incoming: ' +
         ', '.join(cf_directory_list(cf_component_get_incoming(component))))
-  print('outgoing: ' +
+  print(prefix + 'outgoing: ' +
         ', '.join(cf_directory_list(cf_component_get_outgoing(component))))
-  print('incoming_namespace: ' +
+  print(prefix + 'incoming_namespace: ' +
         ', '.join(cf_directory_list(cf_component_get_incoming_namespace(component))))
-  print('outgoing_namespace: ' +
+  print(prefix + 'outgoing_namespace: ' +
         ', '.join(cf_directory_list(cf_component_get_outgoing_namespace(component))))
+
+def print_tree(component, prefix=''):
+  print_component(component, prefix)
+  for c in cf_component_get_children(component):
+    print(prefix + 'child: ' + c)
+    print_tree(cf_component_get_child(component, c), prefix + '  ')
 
