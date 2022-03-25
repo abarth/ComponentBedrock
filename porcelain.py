@@ -28,8 +28,10 @@ def cf_component_get_pkg_directory(component):
 
 
 def cf_component_resolve_src(component, name):
-  if name == '#self':
+  if name == '#self' or name == '#self:outgoing':
     return cf_component_get_outgoing_namespace(component)
+  if name == '#self:incoming':
+    return cf_component_get_incoming_namespace(component)
   if name == '#parent':
     return cf_component_get_incoming(component)
   return cf_component_get_outgoing(cf_component_get_child(component, name))

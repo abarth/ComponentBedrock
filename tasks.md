@@ -6,3 +6,6 @@
   * "Suppose a directory exposed by bootstrap we want to route to core"
 
 ## Task items
+
+* Dynamic child routing
+* Component tear down and rebuild

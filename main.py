@@ -12,6 +12,7 @@ def parse_component(filename):
     child = parse_component(c['url'])
     cf_component_add_child(component, c['name'], child)
 
+  # TODO - need to separate parsing and resolution so we can resolve from parent.
   for r in specification.get('routes', []):
     source_component_name = r['src']
     default_capability_name = r['name'] if 'name' in r else False
