@@ -2,6 +2,7 @@ from shell import *
 import json5
 
 def read_specification(filename):
+  print('reading manifest %s' % filename)
   with open(filename) as f:
     return json5.load(f)
 
@@ -39,3 +40,5 @@ bootstrap = cf_component_get_child(root, 'bootstrap')
 bootstrap_incoming_namespace = cf_component_get_incoming_namespace(bootstrap)
 bootstrap_pkg = cf_component_get_pkg_directory(bootstrap)
 cf_directory_add_child(bootstrap_incoming_namespace, 'pkg', bootstrap_pkg)
+
+print_tree(root)

@@ -9,3 +9,5 @@
 
 * Dynamic child routing
 * Component tear down and rebuild
+* Differentiate parent's access to child components from component's access to themselves
+* Separate inspection facilities from general facilities

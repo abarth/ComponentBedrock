@@ -34,6 +34,8 @@ def cf_component_resolve_src(component, name):
     return cf_component_get_incoming_namespace(component)
   if name == '#parent':
     return cf_component_get_incoming(component)
+  if name == '#self:pkg':
+    return cf_component_get_pkg_directory(component)
   return cf_component_get_outgoing(cf_component_get_child(component, name))
 
 
