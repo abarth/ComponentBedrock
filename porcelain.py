@@ -2,9 +2,20 @@ from bedrock import *
 
 # Helper routines based on the bedrock APIs
 
+# TODO: should this be part of bedrock or porcelain?
+# Constraint: capability must implement `Capability` class
+# How would we enforce 'no dangling routes' invariant?
 def cf_directory_route_capability(src_directory, src_name, dst_directory, dst_name, transformer=lambda x: x):
-  capability = transformer(cf_directory_open(src_directory, src_name))
-  cf_directory_add_child(dst_directory, dst_name, capability)
+  # lazy routing: only open the source when the destination is opened
+  class RoutedCapability(Capability):
+    def __init__(self, src_directory, src_name):
+      self.src_directory = src_directory
+      self.src_name = src_name
+  
+    def open(self):
+      return transformer(cf_directory_open(self.src_directory, self.src_name)).open()
+      
+  cf_directory_add_child(dst_directory, dst_name, RoutedCapability(src_directory, src_name))
 
 
 def cf_component_route_capability(src_component, src_name, dst_component, dst_name, transformer=lambda x: x):
@@ -34,6 +45,8 @@ def cf_component_resolve_src(component, name):
     return cf_component_get_incoming_namespace(component)
   if name == '#parent':
     return cf_component_get_incoming(component)
+  if name == '#self:pkg':
+    return cf_component_get_pkg_directory(component)
   return cf_component_get_outgoing(cf_component_get_child(component, name))
 
 
@@ -43,3 +56,8 @@ def cf_component_resolve_dst(component, name):
   if name == '#parent':
     return cf_component_get_outgoing(component)
   return cf_component_get_incoming(cf_component_get_child(component, name))
+
+# abstract base class
+class Capability(object):
+  def open(self):
+    pass
