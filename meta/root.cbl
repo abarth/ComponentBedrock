@@ -3,15 +3,15 @@
   children: [
     {
       name: "bootstrap",
-      url: "meta/bootstrap.cbl",
+      url: "fuchsia-pkg://fuchsia.com/bootstrap#meta/bootstrap.cbl",
     },
     {
       name: "core",
-      url: "meta/core.cbl",
+      url: "fuchsia-pkg://fuchsia.com/core#meta/core.cbl",
     },
     {
       name: "vulkan_loader",
-      url: "meta/vulkan_loader.cbl",
+      url: "fuchsia-pkg://fuchsia.com/vulkan_loader#meta/vulkan_loader.cbl",
     }
   ],
   routes: [
