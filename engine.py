@@ -1,4 +1,5 @@
 import re
+import threading
 
 
 class Directory(object):
@@ -19,6 +20,9 @@ class Directory(object):
     def lookup(self, name):
         return self._entries.get(name)
 
+    def __repr__(self):
+        return repr(self._entries)
+
 
 class Package(object):
     def __init__(self):
@@ -36,6 +40,15 @@ class Component(object):
         # private
         self._state = BaseState()
 
+    def start(self):
+        assert isinstance(self._state, ResolvedState)
+        self._state = RunningState(self._state)
+
+        def submain():
+            exec(self._state.program, {'__HANDLE__': self})
+
+        threading.Thread(target=submain).start()
+
 
 class BaseState(object):
     def __init__(self):
@@ -52,6 +65,7 @@ class ResolvedState(BaseState):
         self.incoming_namespace = Directory()
         self.outgoing_namespace = Directory()
         self.package = Package()
+        self.program = None
         self.children = {}
 
     def add_child(self, name, child):
@@ -68,4 +82,12 @@ class ResolvedState(BaseState):
         return self.children.get(name)
 
 
-# class RunningState(ResolvedState):
+class RunningState(ResolvedState):
+    def __init__(self, resolved_state):
+        self.incoming = resolved_state.incoming
+        self.outgoing = resolved_state.outgoing
+        self.incoming_namespace = resolved_state.incoming_namespace
+        self.outgoing_namespace = resolved_state.outgoing_namespace
+        self.package = resolved_state.package
+        self.program = resolved_state.program
+        self.children = resolved_state.children

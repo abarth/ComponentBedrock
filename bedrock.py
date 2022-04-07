@@ -83,6 +83,15 @@ def cf_component_get_package(component):
     return component._state.package
 
 
+def cf_component_set_program(component, str):
+    assert isinstance(component._state, engine.ResolvedState)
+    component._state.program = str
+
+
+def cf_component_start(component):
+    component.start()
+
+
 def cf_package_get_directory(package):
     return package.directory
 

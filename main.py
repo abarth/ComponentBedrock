@@ -74,6 +74,10 @@ def resolve_component(component, specification, incoming_above_root):
     for (name, cap) in incoming_above_root.items():
         incoming.add_entry(name, cap)
 
+    if bin := specification.get('bin'):
+        with open(bin) as codefile:
+            cf_component_set_program(component, codefile.read())
+
     # Add children, but don't resolve them yet
     for c in specification.get('children', []):
         child = cf_component_create(c['url'])
@@ -94,6 +98,9 @@ def resolve_component(component, specification, incoming_above_root):
         (_, child_spec) = resolver.resolve(child.url)
         assert child_spec is not None
         resolve_component(child, child_spec, {})
+
+    if bin:
+        cf_component_start(component)
 
 
 class Resolver(object):

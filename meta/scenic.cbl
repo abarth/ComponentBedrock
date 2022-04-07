@@ -1,4 +1,5 @@
 {
+  bin: "bin/scenic.py",
   routes: [
     {
       src: "#parent",
