@@ -22,8 +22,9 @@
     },
     {
       src: "vulkan_loader",
-      name: "vulkan_lib",
+      src_name: "vulkan_lib",
       dst: "core",
+      dst_name: "vulkan_loader",
     }
   ]
 }
