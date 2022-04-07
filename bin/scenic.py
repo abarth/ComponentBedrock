@@ -1,6 +1,10 @@
 
 from porcelain import *
 
-print("hello", __HANDLE__)
+def main():
+    incoming = cf_component_get_incoming_namespace(__HANDLE__)
+    lib = cf_directory_open(incoming, "vulkan_loader")
+    print('SCENIC SENDING MESSAGE')
+    cf_capability_send(lib, "hello world")
 
-print(cf_component_get_incoming_namespace(__HANDLE__))
+main()

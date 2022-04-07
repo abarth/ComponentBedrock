@@ -3,26 +3,13 @@ from bedrock import *
 # Helper routines based on the bedrock APIs
 
 
-# TODO: should this be part of bedrock or porcelain?
-# Constraint: capability must implement `Capability` class
-# How would we enforce 'no dangling routes' invariant?
 def cf_directory_route_capability(src_directory,
                                   src_name,
                                   dst_directory,
                                   dst_name,
                                   transformer=lambda x: x):
-    # lazy routing: only open the source when the destination is opened
-    class RoutedCapability(Capability):
-        def __init__(self, src_directory, src_name):
-            self.src_directory = src_directory
-            self.src_name = src_name
-
-        def open(self):
-            return transformer(
-                cf_directory_open(self.src_directory, self.src_name)).open()
-
-    cf_directory_add_child(dst_directory, dst_name,
-                           RoutedCapability(src_directory, src_name))
+    cap = transformer(cf_directory_lookup(src_directory, src_name))
+    cf_directory_add_child(dst_directory, dst_name, cap)
 
 
 def cf_component_route_capability(src_component,

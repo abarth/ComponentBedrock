@@ -44,16 +44,25 @@ def add_route(component, r):
            dest_capability_name))
 
     if r['src'] == '#parent':
+        # Routing from a parent doesn't make a new capability, it takes an
+        # existing one and gives it to a child.
         cf_directory_route_capability(source_directory, source_capability_name,
                                       dest_directory, dest_capability_name)
     elif r['dst'] == '#parent':
         # things routed to the parent are routed "backwards". The server end
         # is routed from the parent down to the child.
-        cf_directory_route_capability(dest_directory, dest_capability_name, 
+        cf_directory_route_capability(dest_directory, dest_capability_name,
                                       source_directory, source_capability_name)
     else:
+        # TODO(hjfreyer): This doesn't quite work. If you create two routes with
+        # the same source component and name, they'll clash with each other. A
+        # potential fix would be to make each route between children have one
+        # source and many destinations, or just aggregate by source first.
+        #
+        # TODO(hjfreyer): I broke `#self:incoming` and `#self:pkg`.
         sender, reciever = cf_capability_create()
-        cf_directory_add_child(source_directory, source_capability_name, reciever)
+        cf_directory_add_child(source_directory, source_capability_name,
+                               reciever)
         cf_directory_add_child(dest_directory, dest_capability_name, sender)
 
 
@@ -80,59 +89,17 @@ def resolve_component(component, specification):
     print('resolving component %s' % component.url)
     cf_component_resolve(component)
 
-    # # Bootstrap root's incoming
-    incoming = cf_component_get_incoming(component)
-    outgoing = cf_component_get_outgoing(component)
-    # for (name, cap) in incoming_above_root.items():
-    #     incoming.add_entry(name, cap)
-
-    incoming_namespace = cf_component_get_incoming_namespace(component)
-    outgoing_namespace = cf_component_get_outgoing_namespace(component)
-
-    # child_dirs = {}
-
     if bin := specification.get('bin'):
         with open(bin) as codefile:
             cf_component_set_program(component, codefile.read())
 
     # Add children, but don't resolve them yet
     for c in specification.get('children', []):
-        child = cf_component_create(c['url'], cf_directory_create(), cf_directory_create())
+        child = cf_component_create(c['url'])
         cf_component_add_child(component, c['name'], child)
 
     # Add routes
     for r in specification.get('routes', []):
-        # default_capability_name = r['name'] if 'name' in r else False
-        # source_capability_name = r.get('src_name', default_capability_name)
-        # dest_capability_name = r.get('dst_name', default_capability_name)
-
-        # if r['src'] == '#parent' and r['dst'] == '#self':
-        #     cf_directory_route_capability(incoming, source_capability_name,
-        #                                   incoming_namespace,
-        #                                   dest_capability_name)
-        # elif r['src'] == '#parent':
-        #     dest_directory = cf_component_resolve_dst(r['dst'],
-        #                                               dest_component_name)
-        #     cf_directory_route_capability(incoming, source_capability_name,
-        #                                   dest_directory, dest_capability_name)
-        # elif r['src'] == '#self' and r['dst'] == '#parent':
-        #     cf_directory_route_capability(outgoing, dest_capability_name,
-        #                                   source_capability_name,
-        #                                   dest_directory, outgoing_namespace)
-
-        # source_component_name = r['src']
-        # source_directory = cf_component_resolve_src(component,
-        #                                             source_component_name)
-
-        # dest_component_name =
-
-        # print(
-        #     'routing capability "%s" from component %s to component %s as "%s"'
-        #     % (source_capability_name, source_component_name,
-        #        dest_component_name, dest_capability_name))
-        # cf_directory_route_capability(source_directory, source_capability_name,
-        #                               dest_directory, dest_capability_name)
-
         add_route(component, r)
 
     # Add default routes
@@ -140,6 +107,7 @@ def resolve_component(component, specification):
 
     # Now, resolve the children. This has to be done after adding routes so children
     # can access the resolver.
+    incoming = cf_component_get_incoming(component)
     resolver = cf_directory_lookup(incoming, 'resolver').open()
     for name in cf_component_get_children(component):
         child = cf_component_get_child(component, name)
@@ -174,16 +142,17 @@ class ResolverFactory(Capability):
 
 
 print('\n=== START ===\n')
-incoming = cf_directory_create()
-cf_directory_add_child(incoming, "resolver", ResolverFactory())
 # TODO: could call the resolver
 specification = read_specification('meta/root.cbl')
-root = cf_component_create(None, incoming, cf_directory_create())
+root = cf_component_create(None)
+cf_directory_add_child(cf_component_get_incoming(root), "resolver",
+                       ResolverFactory())
+
 resolve_component(root, specification)
 
-# bootstrap = cf_component_get_child(root, 'bootstrap')
-# bootstrap_incoming_namespace = cf_component_get_incoming_namespace(bootstrap)
-# bootstrap_pkg = cf_component_get_pkg_directory(bootstrap)
-# cf_directory_add_child(bootstrap_incoming_namespace, 'pkg', bootstrap_pkg)
+bootstrap = cf_component_get_child(root, 'bootstrap')
+bootstrap_incoming_namespace = cf_component_get_incoming_namespace(bootstrap)
+bootstrap_pkg = cf_component_get_pkg_directory(bootstrap)
+cf_directory_add_child(bootstrap_incoming_namespace, 'pkg', bootstrap_pkg)
 
 print_tree(root)

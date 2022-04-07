@@ -1,8 +1,9 @@
- {
+{
+  bin: 'bin/vulkan_loader.py',
   routes: [
     {
-      src: "#self:pkg",
-      src_name: "data",
+      src: "#self",
+      src_name: "vulkan_lib",
       dst: "#parent",
       dst_name: "vulkan_lib"
     },

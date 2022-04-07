@@ -35,8 +35,9 @@ def cf_directory_lookup(directory, name):
     return directory.lookup(name)
 
 
-def cf_component_create(url, incoming, outgoing):
-    component = engine.Component(url, incoming, outgoing)
+def cf_component_create(url):
+    component = engine.Component(url)
+    component._state = engine.BaseState()
     return component
 
 
@@ -97,7 +98,7 @@ def cf_package_get_directory(package):
 
 
 def cf_capability_create():
-    """Returns a (sender/client_end, reciever/server_end) pair."""    
+    """Returns a (sender/client_end, reciever/server_end) pair."""
     queue = multiprocessing.SimpleQueue()
     return engine.Sender(queue), engine.Reciever(queue)
 
