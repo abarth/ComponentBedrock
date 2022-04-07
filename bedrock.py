@@ -1,4 +1,5 @@
 import engine
+import multiprocessing
 
 
 def cf_directory_create():
@@ -34,9 +35,8 @@ def cf_directory_lookup(directory, name):
     return directory.lookup(name)
 
 
-def cf_component_create(url):
-    component = engine.Component(url)
-    component._state = engine.BaseState()
+def cf_component_create(url, incoming, outgoing):
+    component = engine.Component(url, incoming, outgoing)
     return component
 
 
@@ -96,6 +96,15 @@ def cf_package_get_directory(package):
     return package.directory
 
 
-# def cf_component_resolve_moniker(component, moniker):
-#   current = component
-#   for part in moniker.split('/'):
+def cf_capability_create():
+    """Returns a (sender/client_end, reciever/server_end) pair."""    
+    queue = multiprocessing.SimpleQueue()
+    return engine.Sender(queue), engine.Reciever(queue)
+
+
+def cf_capability_send(capability, message):
+    capability.send(message)
+
+
+def cf_capability_recv(capability):
+    return capability.recv()

@@ -11,7 +11,7 @@ class Directory(object):
 
     def add_entry(self, name, object):
         assert not name in self._entries
-        assert Directory.is_valid_entry_name(name)
+        assert Directory.is_valid_entry_name(name), name
         self._entries[name] = object
 
     def list(self):
@@ -24,6 +24,26 @@ class Directory(object):
         return repr(self._entries)
 
 
+class Sender(object):
+    def __init__(self, queue):
+        self._queue = queue
+
+    def send(self, msg):
+        self._queue.put(msg)
+
+
+class Reciever(object):
+    def __init__(self, queue):
+        self._queue = queue
+
+    def recieve(self):
+        return self._queue.get()
+
+    def send(self, msg):
+        self._queue.put(msg)
+
+
+
 class Package(object):
     def __init__(self):
         self.directory = Directory()
@@ -34,11 +54,11 @@ class Component(object):
         return re.fullmatch('[-a-zA-Z_.]{1,100}', name)
 
     # url may be None
-    def __init__(self, url):
+    def __init__(self, url, incoming, outgoing):
         self.parent = None
         self.url = url
         # private
-        self._state = BaseState()
+        self._state = BaseState(incoming, outgoing)
 
     def start(self):
         assert isinstance(self._state, ResolvedState)
@@ -51,17 +71,15 @@ class Component(object):
 
 
 class BaseState(object):
-    def __init__(self):
+    def __init__(self, incoming, outgoing):
         # These must be part of BaseState so we can add routes without resolving the target component
-        self.incoming = Directory()
-        self.outgoing = Directory()
+        self.incoming = incoming
+        self.outgoing = outgoing
 
 
 class ResolvedState(BaseState):
     def __init__(self, base_state):
-        super().__init__()
-        self.incoming = base_state.incoming
-        self.outgoing = base_state.outgoing
+        super().__init__(base_state.incoming, base_state.outgoing)
         self.incoming_namespace = Directory()
         self.outgoing_namespace = Directory()
         self.package = Package()
