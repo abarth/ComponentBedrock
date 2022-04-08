@@ -66,7 +66,7 @@ class Component(object):
         def submain():
             exec(self._state.program, {'__HANDLE__': self})
 
-        threading.Thread(target=submain).start()
+        threading.Thread(target=submain, daemon=True).start()
 
 
 class BaseState(object):

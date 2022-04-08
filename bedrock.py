@@ -1,5 +1,5 @@
 import engine
-import multiprocessing
+from queue import Queue
 
 
 def cf_directory_create():
@@ -99,7 +99,7 @@ def cf_package_get_directory(package):
 
 def cf_capability_create():
     """Returns a (sender/client_end, reciever/server_end) pair."""
-    queue = multiprocessing.SimpleQueue()
+    queue = Queue()
     return engine.Sender(queue), engine.Reciever(queue)
 
 

@@ -61,9 +61,3 @@ def cf_component_resolve_dst(component, name):
     if name == '#parent':
         return cf_component_get_outgoing(component)
     return cf_component_get_incoming(cf_component_get_child(component, name))
-
-
-# abstract base class
-class Capability(object):
-    def open(self):
-        pass
