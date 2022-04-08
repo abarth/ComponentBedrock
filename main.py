@@ -135,12 +135,6 @@ class ResolveOutput(object):
         self.pkg = pkg
         self.spec = spec
 
-class ResolverThread(threading.Thread):
-    def __init__(self, pkg_map, receiver):
-        super().__init__(daemon=True)
-        self.pkg_map = pkg_map
-        self.receiver = receiver
-
 def run_resolver(pkg_map, receiver):
     while True:
         msg = cf_capability_recv(receiver)
