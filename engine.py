@@ -1,4 +1,5 @@
 import re
+import queue
 import threading
 
 
@@ -24,6 +25,12 @@ class Directory(object):
         return repr(self._entries)
 
 
+class WatchableQueue(queue.Queue):
+    def watch(self):
+        self.not_empty.acquire()
+        self.not_empty.release()
+
+
 class Sender(object):
     def __init__(self, queue):
         self._queue = queue
@@ -42,6 +49,9 @@ class Reciever(object):
     def send(self, msg):
         self._queue.put(msg)
 
+    def watch(self):
+        self._queue.watch()
+
 
 class Package(object):
     def __init__(self):
@@ -53,9 +63,9 @@ class Component(object):
         return re.fullmatch('[-a-zA-Z_.]{1,100}', name)
 
     # url may be None
-    def __init__(self, url):
+    def __init__(self):
         self.parent = None
-        self.url = url
+        self.attributes = {}
         # private
         self._state = BaseState()
 

@@ -23,6 +23,12 @@ def cf_directory_open(directory, path):
     return stack[-1]
 
 
+def cf_component_set_attribute(component, attr, val):
+    component.attributes[attr] = val
+
+def cf_component_get_attribute(component, attr):
+    return component.attributes.get(attr)
+
 def cf_directory_add_child(directory, name, object):
     directory.add_entry(name, object)
 
@@ -35,8 +41,8 @@ def cf_directory_lookup(directory, name):
     return directory.lookup(name)
 
 
-def cf_component_create(url):
-    component = engine.Component(url)
+def cf_component_create():
+    component = engine.Component()
     component._state = engine.BaseState()
     return component
 
@@ -44,6 +50,11 @@ def cf_component_create(url):
 def cf_component_resolve(component):
     assert isinstance(component._state, engine.BaseState)
     component._state = engine.ResolvedState(component._state)
+    assert isinstance(component._state, engine.ResolvedState)
+
+
+def cf_component_is_resolved(component):
+    return isinstance(component._state, engine.ResolvedState)
 
 
 def cf_component_add_child(component, name, child):
@@ -99,7 +110,7 @@ def cf_package_get_directory(package):
 
 def cf_capability_create():
     """Returns a (sender/client_end, reciever/server_end) pair."""
-    queue = Queue()
+    queue = engine.WatchableQueue()
     return engine.Sender(queue), engine.Reciever(queue)
 
 
@@ -109,3 +120,7 @@ def cf_capability_send(capability, message):
 
 def cf_capability_recv(capability):
     return capability.recv()
+
+
+def cf_capability_watch(capability):
+    capability.watch()
