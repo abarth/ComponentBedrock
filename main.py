@@ -70,7 +70,7 @@ def add_route(component, r):
 
     if not cf_component_is_resolved(source_component) and not cf_component_is_eager(source_component):
         cap = cf_directory_lookup(source_directory, source_capability_name)
-        return RouterServer(cap, source_component)
+        return RouterServer(cap, source_component, source_capability_name)
     return None
 
 
@@ -96,7 +96,6 @@ def add_default_routes(component):
 # TBD: Who is responsible for lazy resolving? parent or framework?
 def resolve_component(component):
     url = cf_component_get_attribute(component, 'url')
-    print('resolving component %s' % url)
     specification = load_component(component)
     cf_component_resolve(component)
 
@@ -131,6 +130,7 @@ def resolve_component(component):
     for name in cf_component_get_children(component):
         child = cf_component_get_child(component, name)
         if cf_component_is_eager(child):
+            print('eagerly resolving component %s' % cf_component_get_attribute(child, 'url'))
             resolve_component(child)
 
     # Start the component if it's executable
@@ -151,14 +151,17 @@ def load_component(component):
 
 
 class RouterServer(threading.Thread):
-    def __init__(self, receiver, component):
+    def __init__(self, receiver, component, capability_name):
         super().__init__(daemon=True)
         self.receiver = receiver
         self.component = component
+        self.capability_name = capability_name
 
     def run(self):
         # Wait for a message to arrive.
         cf_capability_watch(self.receiver)
+        url = cf_component_get_attribute(self.component, 'url')
+        print('lazily resolving component %s for %s' % (url, self.capability_name))
         resolve_component(self.component)
         # Either the receiver has arrived at its final destination, or control over it has been
         # handed off to the incoming dir of another unresolved component. Either way, there is
@@ -200,6 +203,7 @@ if __name__ == '__main__':
     cf_component_set_attribute(root, 'url', 'fuchsia-pkg://fuchsia.com/root#meta/root.cbl')
     cf_directory_add_child(cf_component_get_incoming(root), 'loader',
                            loader_sender)
+    print('resolving root component')
     resolve_component(root)
 
     #bootstrap = cf_component_get_child(root, 'bootstrap')

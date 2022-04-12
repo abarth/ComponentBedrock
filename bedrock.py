@@ -111,7 +111,7 @@ def cf_package_get_directory(package):
 def cf_capability_create():
     """Returns a (sender/client_end, reciever/server_end) pair."""
     queue = engine.WatchableQueue()
-    return engine.Sender(queue), engine.Reciever(queue)
+    return engine.Sender(queue), engine.Receiver(queue)
 
 
 def cf_capability_send(capability, message):

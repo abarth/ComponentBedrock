@@ -26,9 +26,22 @@ class Directory(object):
 
 
 class WatchableQueue(queue.Queue):
+    def __init__(self):
+        super().__init__()
+        self.sem = threading.Semaphore(0)
+
+    def put(self, msg):
+        super().put(msg)
+        self.sem.release()
+
+    def get(self):
+        self.sem.acquire()
+        msg = super().get()
+        return msg
+
     def watch(self):
-        self.not_empty.acquire()
-        self.not_empty.release()
+        self.sem.acquire()
+        self.sem.release()
 
 
 class Sender(object):
@@ -39,7 +52,7 @@ class Sender(object):
         self._queue.put(msg)
 
 
-class Reciever(object):
+class Receiver(object):
     def __init__(self, queue):
         self._queue = queue
 
