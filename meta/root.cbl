@@ -8,6 +8,7 @@
     {
       name: "core",
       url: "fuchsia-pkg://fuchsia.com/core#meta/core.cbl",
+      eager: true,
     },
     {
       name: "vulkan_loader",

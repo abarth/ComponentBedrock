@@ -4,6 +4,7 @@ import threading
 import os
 import queue
 import sys
+import time
 
 
 def read_specification(filename):
@@ -32,13 +33,12 @@ def make_pkg_dir(path):
 def add_route(component, r):
     source_component_name = r['src']
     default_capability_name = r['name'] if 'name' in r else False
-    source_directory = cf_component_resolve_src(component,
-                                                source_component_name)
+    (source_component, source_directory) = cf_component_find_src(component, source_component_name)
 
     source_capability_name = r.get('src_name', default_capability_name)
 
     dest_component_name = r['dst']
-    dest_directory = cf_component_resolve_dst(component, dest_component_name)
+    (dest_component, dest_directory) = cf_component_find_dst(component, dest_component_name)
 
     dest_capability_name = r.get('dst_name', default_capability_name)
 
@@ -68,19 +68,25 @@ def add_route(component, r):
                                reciever)
         cf_directory_add_child(dest_directory, dest_capability_name, sender)
 
+    if not cf_component_is_resolved(source_component) and not cf_component_is_eager(source_component):
+        cap = cf_directory_lookup(source_directory, source_capability_name)
+        return RouterServer(cap, source_component, source_capability_name)
+    return None
+
 
 # Most people will want this, but not everyone. suggestion: use the
 # name `component` for something with opinion, built onto something more
 # fundamental like `topology_node`.
 def add_default_routes(component):
     for dest_component_name in cf_component_get_children(component):
-        source_directory = cf_component_resolve_src(component, '#parent')
-        dest_directory = cf_component_resolve_dst(component,
-                                                  dest_component_name)
-        source_capability_name = 'resolver'
-        dest_capability_name = 'resolver'
+        # TODO(geb): This should probably launch the RouterServer if necessary
+        (_, source_directory) = cf_component_find_src(component, '#parent')
+        (_, dest_directory) = cf_component_find_dst(component,
+                                                    dest_component_name)
+        source_capability_name = 'loader'
+        dest_capability_name = 'loader'
         print(
-            'routing default capability "resolver" from #parent to component %s'
+            'routing default capability "loader" from #parent to component %s'
             % dest_component_name)
         cf_directory_route_capability(source_directory, source_capability_name,
                                       dest_directory, dest_capability_name)
@@ -88,8 +94,9 @@ def add_default_routes(component):
 
 # Idea: allow parsers to be chainable via transformers-
 # TBD: Who is responsible for lazy resolving? parent or framework?
-def resolve_component(component, specification):
-    print('resolving component %s' % component.url)
+def resolve_component(component):
+    url = cf_component_get_attribute(component, 'url')
+    specification = load_component(component)
     cf_component_resolve(component)
 
     if bin := specification.get('bin'):
@@ -98,79 +105,112 @@ def resolve_component(component, specification):
 
     # Add children, but don't resolve them yet
     for c in specification.get('children', []):
-        child = cf_component_create(c['url'])
+        child = cf_component_create()
+        cf_component_set_attribute(child, 'url', c['url'])
+        if c.get('eager') is not None and c['eager']:
+            cf_component_set_attribute(child, 'eager', True)
         cf_component_add_child(component, c['name'], child)
 
     # Add routes
+    router_servers = []
     for r in specification.get('routes', []):
-        add_route(component, r)
+        s = add_route(component, r)
+        if s is not None:
+            router_servers.append(s)
 
     # Add default routes
     add_default_routes(component)
 
-    # Now, resolve the children. This has to be done after adding routes so children
-    # can access the resolver.
-    incoming = cf_component_get_incoming(component)
-    resolver = cf_directory_lookup(incoming, 'resolver')
+    # Start all router servers for lazy routing
+    for s in router_servers:
+        s.start()
+
+    # Now, resolve the eager children. This has to be done after adding routes so children
+    # can access the loader.
     for name in cf_component_get_children(component):
         child = cf_component_get_child(component, name)
-        (res_sender, res_receiver) = cf_capability_create()
-        msg = ResolveInput(child.url, res_sender)
-        cf_capability_send(resolver, msg)
-        res = cf_capability_recv(res_receiver)
-        assert res.spec is not None
-        resolve_component(child, res.spec)
+        if cf_component_is_eager(child):
+            print('eagerly resolving component %s' % cf_component_get_attribute(child, 'url'))
+            resolve_component(child)
 
+    # Start the component if it's executable
     if bin:
         cf_component_start(component)
 
 
-class ResolveInput(object):
+def load_component(component):
+    incoming = cf_component_get_incoming(component)
+    loader = cf_directory_open(incoming, 'loader')
+    (res_sender, res_receiver) = cf_capability_create()
+    url = cf_component_get_attribute(component, 'url')
+    msg = LoadRequest(url, res_sender)
+    cf_capability_send(loader, msg)
+    res = cf_capability_recv(res_receiver)
+    assert res.spec is not None
+    return res.spec
+
+
+class RouterServer(threading.Thread):
+    def __init__(self, receiver, component, capability_name):
+        super().__init__(daemon=True)
+        self.receiver = receiver
+        self.component = component
+        self.capability_name = capability_name
+
+    def run(self):
+        # Wait for a message to arrive.
+        cf_capability_watch(self.receiver)
+        url = cf_component_get_attribute(self.component, 'url')
+        print('lazily resolving component %s for %s' % (url, self.capability_name))
+        resolve_component(self.component)
+        # Either the receiver has arrived at its final destination, or control over it has been
+        # handed off to the incoming dir of another unresolved component. Either way, there is
+        # nothing more for this handler to do, so exit.
+
+
+class LoadRequest(object):
     def __init__(self, url, res_sender):
         self.url = url
         self.res_sender = res_sender
 
-class ResolveOutput(object):
+class LoadResponse(object):
     def __init__(self, pkg, spec):
         self.pkg = pkg
         self.spec = spec
 
-class ResolverThread(threading.Thread):
-    def __init__(self, pkg_map, receiver):
-        super().__init__(daemon=True)
-        self.pkg_map = pkg_map
-        self.receiver = receiver
-
-def run_resolver(pkg_map, receiver):
+def run_loader(pkg_map, receiver):
     while True:
         msg = cf_capability_recv(receiver)
         (pkg_url, fragment) = msg.url.split('#')
         pkg = pkg_map.get(pkg_url)
         spec = cf_directory_open(pkg, fragment)
-        cf_capability_send(msg.res_sender, ResolveOutput(pkg, spec))
+        cf_capability_send(msg.res_sender, LoadResponse(pkg, spec))
 
 if __name__ == '__main__':
     print('\n=== START ===\n')
     pkg_map = make_pkg_map([
+        'fuchsia-pkg://fuchsia.com/root#meta/root.cbl',
         'fuchsia-pkg://fuchsia.com/bootstrap#meta/bootstrap.cbl',
         'fuchsia-pkg://fuchsia.com/core#meta/core.cbl',
         'fuchsia-pkg://fuchsia.com/scenic#meta/scenic.cbl',
         'fuchsia-pkg://fuchsia.com/vulkan_loader#meta/vulkan_loader.cbl'
     ])
-    (resolver_sender, resolver_receiver) = cf_capability_create()
-    resolver_thread = threading.Thread(target=run_resolver, args=(pkg_map, resolver_receiver),
+    (loader_sender, loader_receiver) = cf_capability_create()
+    loader_thread = threading.Thread(target=run_loader, args=(pkg_map, loader_receiver),
                                        daemon=True)
-    resolver_thread.start()
-    root = cf_component_create(None)
-    cf_directory_add_child(cf_component_get_incoming(root), "resolver",
-                           resolver_sender)
-    # TODO: could call the resolver to load the root spec instead
-    specification = read_specification('meta/root.cbl')
-    resolve_component(root, specification)
+    loader_thread.start()
+    root = cf_component_create()
+    cf_component_set_attribute(root, 'url', 'fuchsia-pkg://fuchsia.com/root#meta/root.cbl')
+    cf_directory_add_child(cf_component_get_incoming(root), 'loader',
+                           loader_sender)
+    print('resolving root component')
+    resolve_component(root)
 
-    bootstrap = cf_component_get_child(root, 'bootstrap')
-    bootstrap_incoming_namespace = cf_component_get_incoming_namespace(bootstrap)
-    bootstrap_pkg = cf_component_get_pkg_directory(bootstrap)
-    cf_directory_add_child(bootstrap_incoming_namespace, 'pkg', bootstrap_pkg)
+    #bootstrap = cf_component_get_child(root, 'bootstrap')
+    #bootstrap_incoming_namespace = cf_component_get_incoming_namespace(bootstrap)
+    #bootstrap_pkg = cf_component_get_pkg_directory(bootstrap)
+    #cf_directory_add_child(bootstrap_incoming_namespace, 'pkg', bootstrap_pkg)
 
+    # Hacky sleep to give resolution time to complete
+    time.sleep(0.1)
     print_tree(root)
