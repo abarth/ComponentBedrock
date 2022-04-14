@@ -79,17 +79,18 @@ def add_route(component, r):
 # fundamental like `topology_node`.
 def add_default_routes(component):
     for dest_component_name in cf_component_get_children(component):
-        # TODO(geb): This should probably launch the RouterServer if necessary
-        (_, source_directory) = cf_component_find_src(component, '#parent')
-        (_, dest_directory) = cf_component_find_dst(component,
-                                                    dest_component_name)
-        source_capability_name = 'loader'
-        dest_capability_name = 'loader'
-        print(
-            'routing default capability "loader" from #parent to component %s'
-            % dest_component_name)
-        cf_directory_route_capability(source_directory, source_capability_name,
-                                      dest_directory, dest_capability_name)
+        for default_capability_name in ['loader', 'runner']:
+          # TODO(geb): This should probably launch the RouterServer if necessary
+          (_, source_directory) = cf_component_find_src(component, '#parent')
+          (_, dest_directory) = cf_component_find_dst(component,
+                                                      dest_component_name)
+          source_capability_name = default_capability_name
+          dest_capability_name = default_capability_name
+          print(
+              'routing default capability "%s" from #parent to component %s'
+              % (default_capability_name, dest_component_name))
+          cf_directory_route_capability(source_directory, source_capability_name,
+                                        dest_directory, dest_capability_name)
 
 
 # Idea: allow parsers to be chainable via transformers-
@@ -135,8 +136,17 @@ def resolve_component(component):
 
     # Start the component if it's executable
     if bin:
-        cf_component_start(component)
+        run_component(component)
 
+def run_component(component):
+    incoming = cf_component_get_incoming(component)
+    runner = cf_directory_open(incoming, 'runner')
+    assert runner is not None
+    (res_sender, res_receiver) = cf_capability_create()
+    msg = RunnerRequest(component, res_sender)
+    cf_capability_send(runner, msg)
+    res = cf_capability_recv(res_receiver)
+    assert res
 
 def load_component(component):
     incoming = cf_component_get_incoming(component)
@@ -186,6 +196,28 @@ def run_loader(pkg_map, receiver):
         spec = cf_directory_open(pkg, fragment)
         cf_capability_send(msg.res_sender, LoadResponse(pkg, spec))
 
+
+class RunnerRequest(object):
+    def __init__(self, component, res_sender):
+        self.component = component
+        self.res_sender = res_sender
+
+
+def run_runner(receiver):
+    while True:
+        msg = cf_capability_recv(receiver)
+        component = msg.component
+        # XXX - lock component?
+        program = cf_component_get_program(component)
+        cf_component_start(component)
+      
+        def submain():
+            exec(program, {'__HANDLE__': component})
+
+        threading.Thread(target=submain, daemon=True).start()
+        cf_capability_send(msg.res_sender, True)
+      
+
 if __name__ == '__main__':
     print('\n=== START ===\n')
     pkg_map = make_pkg_map([
@@ -196,13 +228,20 @@ if __name__ == '__main__':
         'fuchsia-pkg://fuchsia.com/vulkan_loader#meta/vulkan_loader.cbl'
     ])
     (loader_sender, loader_receiver) = cf_capability_create()
-    loader_thread = threading.Thread(target=run_loader, args=(pkg_map, loader_receiver),
-                                       daemon=True)
+    loader_thread = threading.Thread(target=run_loader,
+                                     args=(pkg_map, loader_receiver),
+                                     daemon=True)
     loader_thread.start()
+    (runner_sender, runner_receiver) = cf_capability_create()
+    runner_thread = threading.Thread(target=run_runner,
+                                     args=(runner_receiver,),
+                                     daemon=True)
+    runner_thread.start()
     root = cf_component_create()
     cf_component_set_attribute(root, 'url', 'fuchsia-pkg://fuchsia.com/root#meta/root.cbl')
     cf_directory_add_child(cf_component_get_incoming(root), 'loader',
                            loader_sender)
+    cf_directory_add_child(cf_component_get_incoming(root), 'runner', runner_sender)
     print('resolving root component')
     resolve_component(root)
 

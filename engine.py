@@ -77,19 +77,19 @@ class Component(object):
 
     # url may be None
     def __init__(self):
+        # Guards all fields including _state. Guards references
+        # to children but not the children themselves.
+        self.lock = threading.Lock()
         self.parent = None
         self.attributes = {}
         # private
         self._state = BaseState()
 
     def start(self):
-        assert isinstance(self._state, ResolvedState)
-        self._state = RunningState(self._state)
+        with self.lock:
+          assert isinstance(self._state, ResolvedState)
+          self._state = RunningState(self._state)
 
-        def submain():
-            exec(self._state.program, {'__HANDLE__': self})
-
-        threading.Thread(target=submain, daemon=True).start()
 
 
 class BaseState(object):

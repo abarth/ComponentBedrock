@@ -48,56 +48,79 @@ def cf_component_create():
 
 
 def cf_component_resolve(component):
-    assert isinstance(component._state, engine.BaseState)
-    component._state = engine.ResolvedState(component._state)
-    assert isinstance(component._state, engine.ResolvedState)
+    with component.lock:
+        assert isinstance(component._state, engine.BaseState)
+        component._state = engine.ResolvedState(component._state)
+        assert isinstance(component._state, engine.ResolvedState)
 
+def cf_component_get_state(component):
+    with component.lock:
+        if isinstance(component._state, engine.RunningState):
+            return 'running'
+        elif isinstance(component._state, engine.ResolvedState):
+            return 'resolved'
+        else:
+            return 'unresolved'
 
 def cf_component_is_resolved(component):
-    return isinstance(component._state, engine.ResolvedState)
+    with component.lock:
+        return isinstance(component._state, engine.ResolvedState)
 
 
 def cf_component_add_child(component, name, child):
-    assert isinstance(component._state, engine.ResolvedState)
-    component._state.add_child(name, child)
+    with component.lock:
+        assert isinstance(component._state, engine.ResolvedState)
+        component._state.add_child(name, child)
 
 
 def cf_component_get_incoming(component):
-    return component._state.incoming
+    with component.lock:
+        return component._state.incoming
 
 
 def cf_component_get_outgoing(component):
-    return component._state.outgoing
+    with component.lock:
+        return component._state.outgoing
 
 
 def cf_component_get_incoming_namespace(component):
-    assert isinstance(component._state, engine.ResolvedState)
-    return component._state.incoming_namespace
+    with component.lock:
+        assert isinstance(component._state, engine.ResolvedState)
+        return component._state.incoming_namespace
 
 
 def cf_component_get_outgoing_namespace(component):
-    assert isinstance(component._state, engine.ResolvedState)
-    return component._state.outgoing_namespace
+    with component.lock:
+        assert isinstance(component._state, engine.ResolvedState)
+        return component._state.outgoing_namespace
 
 
 def cf_component_get_children(component):
-    assert isinstance(component._state, engine.ResolvedState)
-    return component._state.list_children()
+    with component.lock:
+        assert isinstance(component._state, engine.ResolvedState)
+        return component._state.list_children()
 
 
 def cf_component_get_child(component, name):
-    assert isinstance(component._state, engine.ResolvedState)
-    return component._state.lookup_child(name)
+    with component.lock:
+        assert isinstance(component._state, engine.ResolvedState)
+        return component._state.lookup_child(name)
 
 
 def cf_component_get_package(component):
-    assert isinstance(component._state, engine.ResolvedState)
-    return component._state.package
+    with component.lock:
+        assert isinstance(component._state, engine.ResolvedState)
+        return component._state.package
 
+def cf_component_get_program(component):
+    with component.lock:
+        assert isinstance(component._state, engine.ResolvedState)
+        return component._state.program
 
 def cf_component_set_program(component, str):
-    assert isinstance(component._state, engine.ResolvedState)
-    component._state.program = str
+    with component.lock:
+        assert isinstance(component._state, engine.ResolvedState)
+        component._state.program = str
 
 
 def cf_component_start(component):

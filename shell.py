@@ -24,6 +24,7 @@ def cd(path):
 
 def print_component(component, prefix=''):
     print(prefix + 'url: ' + cf_component_get_attribute(component, 'url'))
+    print(prefix + 'state: ' + cf_component_get_state(component))
     print(prefix + 'incoming: ' +
           ', '.join(cf_directory_list(cf_component_get_incoming(component))))
     print(prefix + 'outgoing: ' +
@@ -36,8 +37,7 @@ def print_component(component, prefix=''):
             cf_directory_list(cf_component_get_incoming_namespace(component))))
         print(prefix + 'outgoing_namespace: ' + ', '.join(
             cf_directory_list(cf_component_get_outgoing_namespace(component))))
-    else:
-        print(prefix + 'not resolved')
+
 
 
 def print_tree(component, prefix=''):
