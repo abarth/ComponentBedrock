@@ -1,4 +1,5 @@
 from shell import *
+from runner import run_component, run_runner
 import json5
 import threading
 import os
@@ -138,15 +139,6 @@ def resolve_component(component):
     if bin:
         run_component(component)
 
-def run_component(component):
-    incoming = cf_component_get_incoming(component)
-    runner = cf_directory_open(incoming, 'runner')
-    assert runner is not None
-    (res_sender, res_receiver) = cf_capability_create()
-    msg = RunnerRequest(component, res_sender)
-    cf_capability_send(runner, msg)
-    res = cf_capability_recv(res_receiver)
-    assert res
 
 def load_component(component):
     incoming = cf_component_get_incoming(component)
@@ -194,29 +186,7 @@ def run_loader(pkg_map, receiver):
         (pkg_url, fragment) = msg.url.split('#')
         pkg = pkg_map.get(pkg_url)
         spec = cf_directory_open(pkg, fragment)
-        cf_capability_send(msg.res_sender, LoadResponse(pkg, spec))
-
-
-class RunnerRequest(object):
-    def __init__(self, component, res_sender):
-        self.component = component
-        self.res_sender = res_sender
-
-
-def run_runner(receiver):
-    while True:
-        msg = cf_capability_recv(receiver)
-        component = msg.component
-        # XXX - lock component?
-        program = cf_component_get_program(component)
-        cf_component_start(component)
-      
-        def submain():
-            exec(program, {'__HANDLE__': component})
-
-        threading.Thread(target=submain, daemon=True).start()
-        cf_capability_send(msg.res_sender, True)
-      
+        cf_capability_send(msg.res_sender, LoadResponse(pkg, spec))      
 
 if __name__ == '__main__':
     print('\n=== START ===\n')

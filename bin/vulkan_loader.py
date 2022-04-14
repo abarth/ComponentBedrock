@@ -2,7 +2,7 @@
 from porcelain import *
 
 def main():
-    outgoing = cf_component_get_outgoing_namespace(__HANDLE__)
+    outgoing = __NAMESPACE__.out_dir
     lib = cf_directory_open(outgoing, "vulkan_lib")
 
     while True:

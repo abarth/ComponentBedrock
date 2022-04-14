@@ -123,7 +123,7 @@ def cf_component_set_program(component, str):
         component._state.program = str
 
 
-def cf_component_start(component):
+def cf_component_set_running(component):
     component.start()
 
 
