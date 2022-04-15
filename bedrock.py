@@ -47,7 +47,7 @@ def cf_component_create():
     return component
 
 
-def cf_component_resolve(component):
+def cf_component_will_resolve(component):
     with component.lock:
         assert isinstance(component._state, engine.BaseState)
         component._state = engine.ResolvedState(component._state)
@@ -112,10 +112,12 @@ def cf_component_get_package(component):
         assert isinstance(component._state, engine.ResolvedState)
         return component._state.package
 
+
 def cf_component_get_program(component):
     with component.lock:
         assert isinstance(component._state, engine.ResolvedState)
         return component._state.program
+
 
 def cf_component_set_program(component, program):
     with component.lock:
@@ -123,23 +125,16 @@ def cf_component_set_program(component, program):
         component._state.program = program
 
 
-class ComponentRunnerSpecification(object):
-    def __init__(self, program, package, incoming_namespace, outgoing_namespace):
-        self.program = program
-        self.package = package
-        self.incoming_namespace = incoming_namespace
-        self.outgoing_namespace = outgoing_namespace
-
-
 def cf_component_will_run(component):
     with component.lock:
         assert isinstance(component._state, engine.ResolvedState)
         component._state = engine.RunningState(component._state)
-        return ComponentRunnerSpecification(
-                component._state.program,
-                component._state.package,
-                component._state.incoming_namespace,
-                component._state.outgoing_namespace)
+
+
+def cf_component_did_stop(component):
+    with component.lock:
+        assert isinstance(component._state, engine.RunningState)
+        component._state = engine.ResolvedState(component._state)
 
 
 def cf_package_get_directory(package):

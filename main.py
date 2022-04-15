@@ -94,12 +94,11 @@ def add_default_routes(component):
                                           dest_directory, dest_capability_name)
 
 
-# Idea: allow parsers to be chainable via transformers-
-# TBD: Who is responsible for lazy resolving? parent or framework?
+# Idea: allow parsers to be chainable via transformers
 def resolve_component(component):
     url = cf_component_get_attribute(component, 'url')
     specification = load_component(component)
-    cf_component_resolve(component)
+    cf_component_will_resolve(component)
 
     if program := specification.get('program'):
         cf_component_set_program(component, program)

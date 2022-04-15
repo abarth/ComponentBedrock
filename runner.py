@@ -7,13 +7,6 @@ class Namespace(object):
         self.in_dir = in_dir
         self.out_dir = out_dir
 
-def populate_namespace(runner_spec):
-    in_dir = cf_directory_create()
-    out_dir = runner_spec.outgoing_namespace
-    incoming_namespace = runner_spec.incoming_namespace
-    cf_directory_add_child(in_dir, 'svc', runner_spec.incoming_namespace)
-    # cf_directory_add_child(in_dir, 'pkg', runner_spec.package)
-    return Namespace(in_dir, out_dir)
 
 def run_component(component):
     incoming = cf_component_get_incoming(component)
@@ -36,14 +29,23 @@ def run_runner(receiver):
     while True:
         msg = cf_capability_recv(receiver)
         component = msg.component
-        runner_spec = cf_component_will_run(component)
-        bin = runner_spec.program.get('bin')
+        bin = cf_component_get_program(component).get('bin')
         with open(bin) as codefile:
             program = codefile.read()
-        namespace = populate_namespace(runner_spec)
+        in_dir = cf_directory_create()
+        incoming_namespace = cf_component_get_incoming_namespace(component)
+        cf_directory_add_child(in_dir,
+                               'svc',
+                               incoming_namespace)
+        # pkg = cf_component_get_pkg_directory(component)
+        # cf_directory_add_child(in_dir, 'pkg', pkg)
+        out_dir = cf_component_get_outgoing_namespace(component)
+        namespace = Namespace(in_dir, out_dir)
       
         def submain():
             exec(program, {'__NAMESPACE__': namespace})
-
+            cf_component_did_stop(component)
+        
+        cf_component_will_run(component)
         threading.Thread(target=submain, daemon=True).start()
         cf_capability_send(msg.res_sender, True)
