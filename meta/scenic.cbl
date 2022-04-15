@@ -1,5 +1,7 @@
 {
-  bin: "bin/scenic.py",
+  program: {
+    bin: "bin/scenic.py",
+  },
   routes: [
     {
       src: "#parent",

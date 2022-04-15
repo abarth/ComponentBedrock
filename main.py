@@ -81,17 +81,17 @@ def add_route(component, r):
 def add_default_routes(component):
     for dest_component_name in cf_component_get_children(component):
         for default_capability_name in ['loader', 'runner']:
-          # TODO(geb): This should probably launch the RouterServer if necessary
-          (_, source_directory) = cf_component_find_src(component, '#parent')
-          (_, dest_directory) = cf_component_find_dst(component,
-                                                      dest_component_name)
-          source_capability_name = default_capability_name
-          dest_capability_name = default_capability_name
-          print(
-              'routing default capability "%s" from #parent to component %s'
-              % (default_capability_name, dest_component_name))
-          cf_directory_route_capability(source_directory, source_capability_name,
-                                        dest_directory, dest_capability_name)
+            # TODO(geb): This should probably launch the RouterServer if necessary
+            (_, source_directory) = cf_component_find_src(component, '#parent')
+            (_, dest_directory) = cf_component_find_dst(component,
+                                                        dest_component_name)
+            source_capability_name = default_capability_name
+            dest_capability_name = default_capability_name
+            print(
+                'routing default capability "%s" from #parent to component %s'
+                % (default_capability_name, dest_component_name))
+            cf_directory_route_capability(source_directory, source_capability_name,
+                                          dest_directory, dest_capability_name)
 
 
 # Idea: allow parsers to be chainable via transformers-
@@ -101,9 +101,8 @@ def resolve_component(component):
     specification = load_component(component)
     cf_component_resolve(component)
 
-    if bin := specification.get('bin'):
-        with open(bin) as codefile:
-            cf_component_set_program(component, codefile.read())
+    if program := specification.get('program'):
+        cf_component_set_program(component, program)
 
     # Add children, but don't resolve them yet
     for c in specification.get('children', []):
@@ -135,8 +134,8 @@ def resolve_component(component):
             print('eagerly resolving component %s' % cf_component_get_attribute(child, 'url'))
             resolve_component(child)
 
-    # Start the component if it's executable
-    if bin:
+    # Start the component if it has a 'program' specification
+    if program:
         run_component(component)
 
 

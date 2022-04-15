@@ -1,5 +1,7 @@
 {
-  bin: 'bin/vulkan_loader.py',
+  program: {
+    bin: 'bin/vulkan_loader.py',
+  },
   routes: [
     {
       src: "#self",
