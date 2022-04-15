@@ -11,6 +11,8 @@ class Directory(object):
         self._entries = {}
 
     def add_entry(self, name, object):
+        if name in self._entries:
+            print('adding name "%s" with entries %s' % (name, self._entries))
         assert not name in self._entries
         assert Directory.is_valid_entry_name(name), name
         self._entries[name] = object
@@ -73,7 +75,7 @@ class Package(object):
 
 class Component(object):
     def is_valid_child_name(name):
-        return re.fullmatch('[-a-zA-Z_.]{1,100}', name)
+        return re.fullmatch('[-a-zA-Z_.0-9]{1,100}', name)
 
     # url may be None
     def __init__(self):

@@ -1,4 +1,5 @@
 from bedrock import *
+import threading
 
 # Helper routines based on the bedrock APIs
 
@@ -41,6 +42,8 @@ def cf_component_find_src(component, name):
         return (component, cf_component_get_incoming(component))
     if name == '#self:pkg':
         return (component, cf_component_get_pkg_directory(component))
+    if name == '#framework':
+        return (None, cf_component_get_attribute(component, "framework"))
     child = cf_component_get_child(component, name)
     return (child, cf_component_get_outgoing(child))
 

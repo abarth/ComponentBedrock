@@ -1,5 +1,6 @@
 from shell import *
 from runner import run_component, run_runner
+from framework import add_framework_service
 import json5
 import threading
 import os
@@ -64,12 +65,17 @@ def add_route(component, r):
         # source and many destinations, or just aggregate by source first.
         #
         # TODO(hjfreyer): I broke `#self:incoming` and `#self:pkg`.
-        sender, reciever = cf_capability_create()
-        cf_directory_add_child(source_directory, source_capability_name,
-                               reciever)
+        sender = cf_directory_lookup(source_directory, source_capability_name)
+        if sender is None:
+            new_sender, receiver = cf_capability_create()
+            cf_directory_add_child(source_directory,
+                                   source_capability_name,
+                                   receiver)
+            sender = new_sender
+
         cf_directory_add_child(dest_directory, dest_capability_name, sender)
 
-    if not cf_component_is_resolved(source_component) and not cf_component_is_eager(source_component):
+    if source_component and not cf_component_is_resolved(source_component) and not cf_component_is_eager(source_component):
         cap = cf_directory_lookup(source_directory, source_capability_name)
         return RouterServer(cap, source_component, source_capability_name)
     return None
@@ -106,6 +112,7 @@ def resolve_component(component):
     # Add children, but don't resolve them yet
     for c in specification.get('children', []):
         child = cf_component_create()
+        add_framework_service(child)
         cf_component_set_attribute(child, 'url', c['url'])
         if c.get('eager') is not None and c['eager']:
             cf_component_set_attribute(child, 'eager', True)
@@ -192,6 +199,7 @@ if __name__ == '__main__':
         'fuchsia-pkg://fuchsia.com/root#meta/root.cbl',
         'fuchsia-pkg://fuchsia.com/bootstrap#meta/bootstrap.cbl',
         'fuchsia-pkg://fuchsia.com/core#meta/core.cbl',
+        'fuchsia-pkg://fuchsia.com/dyn_child#meta/dyn_child.cbl',
         'fuchsia-pkg://fuchsia.com/scenic#meta/scenic.cbl',
         'fuchsia-pkg://fuchsia.com/vulkan_loader#meta/vulkan_loader.cbl'
     ])
@@ -206,6 +214,7 @@ if __name__ == '__main__':
                                      daemon=True)
     runner_thread.start()
     root = cf_component_create()
+    add_framework_service(root)
     cf_component_set_attribute(root, 'url', 'fuchsia-pkg://fuchsia.com/root#meta/root.cbl')
     cf_directory_add_child(cf_component_get_incoming(root), 'loader',
                            loader_sender)
