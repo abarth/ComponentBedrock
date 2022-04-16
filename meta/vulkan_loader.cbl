@@ -5,9 +5,9 @@
   routes: [
     {
       src: "#self",
-      src_name: "vulkan_lib",
+      src_name: "svc/vulkan_lib",
       dst: "#parent",
-      dst_name: "vulkan_lib"
+      dst_name: "vulkan_lib",
     },
     // or
     //{
@@ -23,5 +23,5 @@
     //  dst: "#parent",
     //  dst_name: "vulkan_lib"
     //},
-  ]
+  ],
 }

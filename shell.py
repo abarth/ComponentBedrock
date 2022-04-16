@@ -21,6 +21,12 @@ def cd(path):
         return
     _cwd = directory
 
+def print_directory_tree(directory, prefix=''):
+    for name in cf_directory_list(directory):
+      print(prefix + '* %s' % name)
+      node = cf_directory_lookup(directory, name)
+      if cf_is_directory(node):
+        print_directory_tree(node, prefix + '  ')
 
 def print_component(component, prefix=''):
     print(prefix + 'url: ' + cf_component_get_attribute(component, 'url'))
@@ -33,10 +39,10 @@ def print_component(component, prefix=''):
     if cf_component_is_resolved(component):
         print(prefix + 'children: ' +
               ', '.join(cf_component_get_children(component)))
-        print(prefix + 'incoming_namespace: ' + ', '.join(
-            cf_directory_list(cf_component_get_incoming_namespace(component))))
-        print(prefix + 'outgoing_namespace: ' + ', '.join(
-            cf_directory_list(cf_component_get_outgoing_namespace(component))))
+        print(prefix + 'incoming_namespace: ')
+        print_directory_tree(cf_component_get_incoming_namespace(component), prefix + '  ')
+        print(prefix + 'outgoing_namespace: ')
+        print_directory_tree(cf_component_get_outgoing_namespace(component), prefix + '  ')
 
 
 

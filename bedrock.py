@@ -23,12 +23,6 @@ def cf_directory_open(directory, path):
     return stack[-1]
 
 
-def cf_component_set_attribute(component, attr, val):
-    component.attributes[attr] = val
-
-def cf_component_get_attribute(component, attr):
-    return component.attributes.get(attr)
-
 def cf_directory_add_child(directory, name, object):
     directory.add_entry(name, object)
 
@@ -40,11 +34,22 @@ def cf_directory_list(directory):
 def cf_directory_lookup(directory, name):
     return directory.lookup(name)
 
+def cf_is_directory(object):
+    return isinstance(object, engine.Directory)
+
 
 def cf_component_create():
     component = engine.Component()
     component._state = engine.BaseState()
     return component
+
+
+def cf_component_set_attribute(component, attr, val):
+    component.attributes[attr] = val
+
+
+def cf_component_get_attribute(component, attr):
+    return component.attributes.get(attr)
 
 
 def cf_component_will_resolve(component):

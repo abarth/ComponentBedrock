@@ -5,8 +5,9 @@
   routes: [
     {
       src: "#parent",
-      name: "vulkan_loader",
+      src_name: "vulkan_loader",
       dst: "#self",
+      dst_name: "svc/vulkan_loader"
     },
-  ]
+  ],
 }

@@ -5,8 +5,9 @@
   routes: [
     {
       src: "#framework",
-      name: "framework",
+      src_name: "framework",
       dst: "#self",
+      dst_name: "svc/framework",
     },
   ],
 }

@@ -59,21 +59,15 @@ def add_route(component, r):
         cf_directory_route_capability(dest_directory, dest_capability_name,
                                       source_directory, source_capability_name)
     else:
-        # TODO(hjfreyer): This doesn't quite work. If you create two routes with
-        # the same source component and name, they'll clash with each other. A
-        # potential fix would be to make each route between children have one
-        # source and many destinations, or just aggregate by source first.
-        #
-        # TODO(hjfreyer): I broke `#self:incoming` and `#self:pkg`.
-        sender = cf_directory_lookup(source_directory, source_capability_name)
+        sender = cf_directory_open(source_directory, source_capability_name)
         if sender is None:
             new_sender, receiver = cf_capability_create()
-            cf_directory_add_child(source_directory,
-                                   source_capability_name,
-                                   receiver)
+            cf_path_add_child(source_directory,
+                              source_capability_name,
+                              receiver)
             sender = new_sender
 
-        cf_directory_add_child(dest_directory, dest_capability_name, sender)
+        cf_path_add_child(dest_directory, dest_capability_name, sender)
 
     if source_component and not cf_component_is_resolved(source_component) and not cf_component_is_eager(source_component):
         cap = cf_directory_lookup(source_directory, source_capability_name)
@@ -126,7 +120,7 @@ def resolve_component(component):
             router_servers.append(s)
 
     # Add default routes
-    add_default_routes(component)
+    add_default_routes(component)    
 
     # Start all router servers for lazy routing
     for s in router_servers:
@@ -228,5 +222,5 @@ if __name__ == '__main__':
     #cf_directory_add_child(bootstrap_incoming_namespace, 'pkg', bootstrap_pkg)
 
     # Hacky sleep to give resolution time to complete
-    time.sleep(0.1)
+    time.sleep(0.2)
     print_tree(root)

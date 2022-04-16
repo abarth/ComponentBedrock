@@ -32,13 +32,8 @@ def run_runner(receiver):
         bin = cf_component_get_program(component).get('bin')
         with open(bin) as codefile:
             program = codefile.read()
-        in_dir = cf_directory_create()
-        incoming_namespace = cf_component_get_incoming_namespace(component)
-        cf_directory_add_child(in_dir,
-                               'svc',
-                               incoming_namespace)
-        # pkg = cf_component_get_pkg_directory(component)
-        # cf_directory_add_child(in_dir, 'pkg', pkg)
+
+        in_dir = cf_component_get_incoming_namespace(component)
         out_dir = cf_component_get_outgoing_namespace(component)
         namespace = Namespace(in_dir, out_dir)
       
