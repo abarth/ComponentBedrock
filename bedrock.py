@@ -34,6 +34,7 @@ def cf_directory_list(directory):
 def cf_directory_lookup(directory, name):
     return directory.lookup(name)
 
+
 def cf_is_directory(object):
     return isinstance(object, engine.Directory)
 
@@ -64,6 +65,8 @@ def cf_component_get_state(component):
             return 'running'
         elif isinstance(component._state, engine.ResolvedState):
             return 'resolved'
+        elif isinstance(component._state, engine.StoppedState):
+            return 'stopped'
         else:
             return 'unresolved'
 
@@ -74,7 +77,6 @@ def cf_component_is_resolved(component):
 
 def cf_component_add_child(component, name, child):
     with component.lock:
-        assert isinstance(component._state, engine.ResolvedState)
         component._state.add_child(name, child)
 
 
@@ -132,14 +134,14 @@ def cf_component_set_program(component, program):
 
 def cf_component_will_run(component):
     with component.lock:
-        assert isinstance(component._state, engine.ResolvedState)
+        assert isinstance(component._state, engine.ResolvedState) or isinstance(component._state, engine.StoppedState)
         component._state = engine.RunningState(component._state)
 
 
 def cf_component_did_stop(component):
     with component.lock:
         assert isinstance(component._state, engine.RunningState)
-        component._state = engine.ResolvedState(component._state)
+        component._state = engine.StoppedState(component._state)
 
 
 def cf_package_get_directory(package):

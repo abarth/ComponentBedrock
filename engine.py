@@ -127,11 +127,22 @@ class ResolvedState(BaseState):
 
 
 class RunningState(ResolvedState):
-    def __init__(self, resolved_state):
-        self.incoming = resolved_state.incoming
-        self.outgoing = resolved_state.outgoing
-        self.incoming_namespace = resolved_state.incoming_namespace
-        self.outgoing_namespace = resolved_state.outgoing_namespace
-        self.package = resolved_state.package
-        self.program = resolved_state.program
-        self.children = resolved_state.children
+    def __init__(self, prev_state):
+        self.incoming = prev_state.incoming
+        self.outgoing = prev_state.outgoing
+        self.incoming_namespace = prev_state.incoming_namespace
+        self.outgoing_namespace = prev_state.outgoing_namespace
+        self.package = prev_state.package
+        self.program = prev_state.program
+        self.children = prev_state.children
+
+class StoppedState(ResolvedState):
+    def __init__(self, running_state):
+        self.incoming = running_state.incoming
+        self.outgoing = running_state.outgoing
+        self.incoming_namespace = running_state.incoming_namespace
+        self.outgoing_namespace = running_state.outgoing_namespace
+        self.package = running_state.package
+        self.program = running_state.program
+        self.children = running_state.children
+
